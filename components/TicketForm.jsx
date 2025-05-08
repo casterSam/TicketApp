@@ -1,13 +1,7 @@
 import React from 'react';
 import { View, TextInput, Button, StyleSheet } from 'react-native';
 
-interface Props {
-  newTicket: { title: string; description: string };
-  setNewTicket: (ticket: { title: string; description: string }) => void;
-  handleCreate: (e: any) => void;
-}
-
-export default function TicketForm({ newTicket, setNewTicket, handleCreate }: Props) {
+export default function TicketForm({ newTicket, setNewTicket, handleCreate }) {
   return (
     <View style={styles.container}>
       <TextInput
@@ -32,7 +26,11 @@ export default function TicketForm({ newTicket, setNewTicket, handleCreate }: Pr
 const styles = StyleSheet.create({
   container: { padding: 16 },
   input: {
-    borderColor: '#ccc', borderWidth: 1, padding: 10, marginBottom: 10, borderRadius: 6
+    borderColor: '#ccc',
+    borderWidth: 1,
+    padding: 10,
+    marginBottom: 10,
+    borderRadius: 6,
   },
   textarea: {
     height: 100,

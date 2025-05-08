@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Button, SafeAreaView, StyleSheet } from 'react-native';
+import { View, Button, SafeAreaView, StyleSheet, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import TicketForm from '@/components/TicketForm';
 import TicketList from '@/components/TicketList';
 import TicketDetails from '@/components/TicketDetails';
@@ -8,7 +9,7 @@ interface Ticket {
   _id: string;
   title: string;
   description: string;
-  status: 'pending' | 'processing' | 'completed' | 'closed';
+  status: 'pending' | 'processing' | 'completed' | 'closed' | 'verified';
   createdAt: string;
 }
 
@@ -19,10 +20,26 @@ export default function App() {
   const [isCreatingTicket, setIsCreatingTicket] = useState(false);
 
   useEffect(() => {
-    setTickets([
-      { _id: '1', title: 'Sample Ticket 1', description: 'Login issue', status: 'pending', createdAt: new Date().toISOString() },
-    ]);
+    const loadTickets = async () => {
+      try {
+        const storedTickets = await AsyncStorage.getItem('tickets');
+        if (storedTickets) {
+          setTickets(JSON.parse(storedTickets));
+        }
+      } catch (error) {
+        console.error('Failed to load tickets:', error);
+      }
+    };
+    loadTickets();
   }, []);
+
+  const saveTickets = async (ticketsToSave: Ticket[]) => {
+    try {
+      await AsyncStorage.setItem('tickets', JSON.stringify(ticketsToSave));
+    } catch (error) {
+      console.error('Failed to save tickets:', error);
+    }
+  };
 
   const handleCreateTicket = () => {
     const newTicketObj: Ticket = {
@@ -31,7 +48,9 @@ export default function App() {
       status: 'pending',
       createdAt: new Date().toISOString(),
     };
-    setTickets([...tickets, newTicketObj]);
+    const updatedTickets = [...tickets, newTicketObj];
+    setTickets(updatedTickets);
+    saveTickets(updatedTickets);
     setNewTicket({ title: '', description: '' });
     setIsCreatingTicket(false);
   };
@@ -42,8 +61,23 @@ export default function App() {
   };
 
   const handleCloseTicket = (ticketId: string) => {
-    setTickets(tickets.map(t => t._id === ticketId ? { ...t, status: 'closed' } : t));
+    const updatedTickets = tickets.map(t =>
+      t._id === ticketId ? { ...t, status: 'closed' as 'closed' } : t // cast status to 'closed'
+    );
+    setTickets(updatedTickets);
+    saveTickets(updatedTickets);
     setSelectedTicket(null);
+  };
+
+  const handleVerifyTicket = (ticketId: string) => {
+    const updatedTickets = tickets.map(t =>
+      t._id === ticketId ? { ...t, status: 'verified' as 'verified' } : t // cast status to 'verified'
+    );
+    setTickets(updatedTickets);
+    saveTickets(updatedTickets);
+    const verifiedTicket = updatedTickets.find(t => t._id === ticketId) || null;
+    setSelectedTicket(verifiedTicket);
+    Alert.alert('Ticket Verified', `Ticket ID: ${ticketId} marked as verified.`);
   };
 
   const goBack = () => {
@@ -55,12 +89,20 @@ export default function App() {
     <SafeAreaView style={styles.container}>
       {selectedTicket ? (
         <View>
-          <TicketDetails ticket={selectedTicket} handleCloseTicket={handleCloseTicket} />
+          <TicketDetails
+            ticket={selectedTicket}
+            handleCloseTicket={handleCloseTicket}
+            handleVerifyTicket={handleVerifyTicket}
+          />
           <Button title="Back" onPress={goBack} />
         </View>
       ) : isCreatingTicket ? (
         <View>
-          <TicketForm newTicket={newTicket} setNewTicket={setNewTicket} handleCreate={handleCreateTicket} />
+          <TicketForm
+            newTicket={newTicket}
+            setNewTicket={setNewTicket}
+            handleCreate={handleCreateTicket}
+          />
           <Button title="Back" onPress={goBack} />
         </View>
       ) : (
